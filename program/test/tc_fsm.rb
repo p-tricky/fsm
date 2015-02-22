@@ -61,15 +61,15 @@ class TestFSM < Test::Unit::TestCase
   end
 
   def test_build_from_file
-    fsm = FSM.new
-    fsm.build_from_file(File.dirname(__FILE__) + "/fsm_1")
-    assert_equal(fsm.state, @fsm_1.state.to_s)
+    file_fsm_1 = FSM.new
+    file_fsm_1.build_from_file(File.dirname(__FILE__) + "/fsm_1")
+    assert_equal(file_fsm_1.state, @fsm_1.state.to_s)
     5.times do 
       @fsm_1.send(:change_state, 1)
-      fsm.send(:change_state, "1")
+      file_fsm_1.send(:change_state, "1")
     end
-    assert_equal("3", fsm.state)
-    assert_equal(fsm.state, @fsm_1.state.to_s)
+    assert_equal("3", file_fsm_1.state)
+    assert_equal(file_fsm_1.state, @fsm_1.state.to_s)
   end
 
   def test_run
