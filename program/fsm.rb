@@ -109,6 +109,24 @@ class FSM
     end
   end
       
+  def write_to_file(filename) 
+    open(filename, 'w+') do |f|
+      f.puts "#{@state}"
+      @accepting_states.each_with_index do |state, pos|
+        if pos <  @accepting_states.length-1
+          f.print "#{state}, "
+        else
+          f.print "#{state}\n"
+        end
+      end
+      @paths.each do |src, paths_from_src|
+        paths_from_src.each do |trans, dest|
+          f.puts "#{src}, #{trans}, #{dest}"
+        end
+      end
+    end
+  end
+
   #
   # Gets all of the transitions from a line of text.
   # It can pull transitions either as words (see test/fsm_2) or as chars (see test/fsm_1
@@ -305,6 +323,10 @@ class FSM
     # remove redundant paths
     @paths.delete_if{ |state| not @states.include? state }
   end
+
+  def run_minimized_fsm_from_file(filename)
+  end
+    
 
   if __FILE__ == $0
     fsm_file = ARGV[0]
