@@ -35,35 +35,55 @@
 #
 class FSM
 
-  attr_reader :state, :accepting_states, :transitions
+  attr_reader :state, :states, :accepting_states, :paths
 
   ## 
   #  Initializes empty fsm  
   #
   def initialize(state=nil)
     @state = state
+    @states = []
+    @states << state if state
     @accepting_states = []
-    @transitions = {}
+    @transitions = []
+    @paths = {}
+  end
+
+  def clear
+    @state = nil
+    @states = []
+    @accepting_states = []
+    @transitions = []
+    @paths = {}
   end
 
   def accept(*args)
     @accepting_states = args.to_a.flatten
   end
 
-  def add_transition(start, path, dest)
-    if @transitions.has_key?(start)
-      @transitions[start] = @transitions[start].merge({ path => dest })
+  def add_path(start, path, dest)
+    if @paths.has_key?(start)
+      @paths[start] = @paths[start].merge({ path => dest })
     else
-      @transitions[start] = { path => dest }
+      @paths[start] = { path => dest }
+    end
+    if not @states.include? start
+      @states << start
+    end
+    if not @states.include? dest
+      @states << dest
+    end
+    if not @transitions.include? path
+      @transitions << path
     end
   end
 
   def change_state(input)
-    @state = @transitions[@state][input]
+    @state = @paths[@state][input]
   end
 
   #
-  # Pulls words out of input files and into an array
+  # Pulls words out of input string and into an array
   #
   def self.parse_input_line_for_words(line)
     line.split(/\W+/).reject(&:empty?)
@@ -77,19 +97,21 @@ class FSM
   # that to be transitions
   #  
   def build_from_file(filename)
+    clear
     open(filename, 'r') do |f|
       @state = FSM.parse_input_line_for_words(f.gets)[0]
+      @states << @state
       accept(FSM.parse_input_line_for_words(f.gets))
       while (line = f.gets) 
         start, path, dest = FSM.parse_input_line_for_words(line)
-        add_transition(start, path, dest)
+        add_path(start, path, dest)
       end
     end
   end
       
   #
   # Gets all of the transitions from a line of text.
-  # It can pull transitions are either as words (see test/fsm_2) or as chars (see test/fsm_1
+  # It can pull transitions either as words (see test/fsm_2) or as chars (see test/fsm_1
   #
   def self.get_transition(line, has_words)
     if has_words
@@ -152,6 +174,138 @@ class FSM
     end
   end
 
+  def get_reachable_states()
+    reachable_states = [@state]
+    djikstra_queue = Queue.new
+    djikstra_queue.enq @state
+    while not djikstra_queue.empty?
+      visited_state = djikstra_queue.pop
+      if @paths[visited_state]
+        @paths[visited_state].each do |trans, dest|
+          djikstra_queue.enq dest unless reachable_states.include? dest
+        end
+        reachable_states << visited_state
+      end
+    end
+    return reachable_states
+  end
+
+  def eliminate_unreachable_states()
+    reachable_states = get_reachable_states
+    @states.delete_if{ |state| not reachable_states.include? state }
+    @accepting_states.delete_if{ |state| not reachable_states.include? state }
+    @paths.delete_if{ |state| not reachable_states.include? state }
+  end
+
+  ##
+  #  Returns a hash of hashes.
+  #
+  #  In the return hash, each key corresponds to
+  #  a state.  For each possible transition there
+  #  is a secondary hash where the key is the 
+  #  transition and the value is the state that
+  #  results from said transition.
+  #
+  #  {Test Example}[rdoc-ref:TestFSM#test_accepting_states] 
+  #
+  def build_tables(classes)
+    tbls = Hash.new
+    @states.each do |state|
+      tbl = build_table state, classes
+      tbls[state] = tbl
+    end
+    return tbls
+  end
+
+  ##
+  #  Returns a hash.
+  def build_table(state, classes)
+    tbl = Hash.new
+    classes.each do |cur_class|
+      my_class = cur_class if cur_class.find { |targ| targ.eql? state }
+      tbl["my_class"] = my_class and break if my_class
+    end
+    @transitions.each do |transition| 
+      dest = @paths[state][transition] rescue nil
+      tbl[transition] = dest unless dest
+      if dest
+        classes.each do |cur_class|
+          dest_class = cur_class if cur_class.find { |targ| targ.eql? dest }
+          tbl[transition] = dest_class and break if dest_class
+        end
+      end
+    end
+    return tbl
+  end
+
+  ##
+  #  
+  def split_classes(tbls)
+    equiv_classes = []
+    tbls.group_by{ |k, v| v }.values.each do |equiv_arrs|
+      equiv_class = []
+      equiv_arrs.each do |state|
+        equiv_class << state.first
+      end
+      equiv_classes << equiv_class
+    end
+    return equiv_classes
+  end
+
+  def get_equiv_classes(equiv_classes=nil)
+    old_equiv_classes = equiv_classes
+    if not old_equiv_classes
+      #puts "partition into accepting and rejecting states"
+      old_equiv_classes = @states.partition{ |state| @accepting_states.include? state }.reject(&:empty?)
+    end
+    tbls = build_tables old_equiv_classes
+    new_equiv_classes = split_classes(tbls)
+    #puts "equal: #{new_equiv_classes.eql? old_equiv_classes}"
+    #puts "old classes: #{old_equiv_classes}            new classes: #{new_equiv_classes}"
+    new_equiv_classes = get_equiv_classes(new_equiv_classes) unless new_equiv_classes.eql?(old_equiv_classes) 
+    return new_equiv_classes
+  end
+
+  ##
+  #  Keeps only the first state from each equiv class.
+  #
+  def minimize()
+    eliminate_unreachable_states
+    equiv_classes = get_equiv_classes
+    keeper_states = []
+    equiv_classes.each do |equiv_class| 
+      keeper_states << equiv_class.first
+    end
+    #reset state
+    @state = equiv_classes.find{ |equiv_class| equiv_class.include? @state}.first
+    # remove redundant states
+    @states = keeper_states
+    # remove redundant accepting states
+    @accepting_states.delete_if{ |state| not @states.include? state }
+    # reset paths 
+    @paths.each do |src, paths_from_src|
+      src_class = equiv_classes.find{ |equiv_class| equiv_class.include?(src) }
+      src_keeper_state = src_class.first
+      paths_from_src.each do |trans, dest|
+        dest_class = equiv_classes.find{ |equiv_class| equiv_class.include?(dest) }
+        dest_keeper_state = dest_class.first
+        # if the path connects two equivalent classes then remove it
+        if dest_class.equal?(src_class)
+          @paths[src].delete(trans)
+        # else replace src and dest with keeper state from respective classes
+        else
+          if @paths.has_key?(src_keeper_state)
+            @paths[src_keeper_state] = @paths[src_keeper_state].merge({ trans => dest_keeper_state })
+          else
+            @paths[src_keeper_state] = { trans => dest_keeper_state }
+          end
+        end
+      end
+    end
+    # remove redundant paths
+    @paths.delete_if{ |state| not @states.include? state }
+  end
+
   if __FILE__ == $0
     fsm_file = ARGV[0]
     input_file = ARGV[1]
@@ -161,5 +315,5 @@ class FSM
     fsm.run_from_file(input_file, output_file)
   end
 
-  private :accept, :add_transition, :change_state
+  private 
 end
