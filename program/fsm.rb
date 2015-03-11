@@ -21,7 +21,7 @@
 #  
 #  If you try to give the program a state or transition that contains
 #  special characters or spaces, the program will become confused.
-#  See test/fsm_1 and test/fsm_2 for examples of acceptable file 
+#  See {fsm_1}[rdoc-ref:fsm_1] and test/fsm_2 for examples of acceptable file 
 #  specifications.
 #
 #  ==fsm_input file
@@ -49,6 +49,9 @@ class FSM
     @paths = {}
   end
 
+  ##
+  #  {Test Example}[rdoc-ref:TestFSM#test_clear]
+  #
   def clear
     @state = nil
     @states = []
@@ -61,6 +64,9 @@ class FSM
     @accepting_states = args.to_a.flatten
   end
 
+  ##
+  #  {Test Example}[rdoc-ref:TestFSM#test_add_path]
+  #
   def add_path(start, path, dest)
     if @paths.has_key?(start)
       @paths[start] = @paths[start].merge({ path => dest })
@@ -78,28 +84,37 @@ class FSM
     end
   end
 
+  ##
+  #  {Test Example}[rdoc-ref:TestFSM#test_change_state]
+  #
   def change_state(input)
     @state = @paths[@state][input]
   end
 
+  ##
+  #  Pulls words out of input string and into an array
   #
-  # Pulls words out of input string and into an array
+  #  {Test Example}[rdoc-ref:TestFSM#test_parse_input_line_for_words]
   #
   def self.parse_input_line_for_words(line)
     line.split(/\W+/).reject(&:empty?)
   end
 
-  # 
-  # Builds an fsm from text file
-  # 
-  # The method assumes the first line to be the starting state,
-  # the second line to be accepting states, and any lines after 
-  # that to be transitions
+  ## 
+  #  Builds an fsm from text file
   #  
+  #  The method assumes the first line to be the starting state,
+  #  the second line to be accepting states, and any lines after 
+  #  that to be transitions
+  #  
+  #  {Test Example}[rdoc-ref:TestFSM#test_build_from_file]
+  #
   def build_from_file(filename)
     clear
     open(filename, 'r') do |f|
-      @state = FSM.parse_input_line_for_words(f.gets)[0]
+      while (line = f.gets and line[/\#/]) # skip comments
+      end
+      @state = FSM.parse_input_line_for_words(line)[0]
       @states << @state
       accept(FSM.parse_input_line_for_words(f.gets))
       while (line = f.gets) 
@@ -109,6 +124,10 @@ class FSM
     end
   end
       
+  ##
+  #  Writes the fsm to a file using a formatting style
+  #  that is compatible with the build from file method
+  #  
   def write_to_file(filename) 
     open(filename, 'w+') do |f|
       f.puts "#{@state}"
@@ -127,9 +146,11 @@ class FSM
     end
   end
 
+  ##
+  #  Gets all of the transitions from a line of text.
+  #  It can pull transitions either as words (see test/fsm_2) or as chars (see test/fsm_1)
   #
-  # Gets all of the transitions from a line of text.
-  # It can pull transitions either as words (see test/fsm_2) or as chars (see test/fsm_1
+  #  {Test Example}[rdoc-ref:TestFSM#test_get_transition]
   #
   def self.get_transition(line, has_words)
     if has_words
@@ -144,9 +165,9 @@ class FSM
     end
   end
 
-  #
-  # Processes a string of input and either rejects or accepts.
-  #
+  ##
+  #  Processes a string of input and either rejects or accepts.
+  # 
   def run(input)
     has_words = input.include?(",")
     begin
@@ -163,12 +184,12 @@ class FSM
     end
   end
 
-  #
-  # Reads lines from an input file and either accepts or rejects each 
-  # line
-  #
-  # The method assumes each line of the file is a new test.  Dont put 
-  # line breaks in your tests it will confuse the program
+  ##
+  #  Reads lines from an input file and either accepts or rejects each 
+  #  line
+  #  
+  #  The method assumes each line of the file is a new test.  Dont put 
+  #  line breaks in your tests it will confuse the program
   #
   def run_from_file(input_file, output_file)
     results = []
@@ -208,6 +229,9 @@ class FSM
     return reachable_states
   end
 
+  ##
+  #  {Test Example}[rdoc-ref:TestFSM#test_eliminate_unreachable_states]
+  #
   def eliminate_unreachable_states()
     reachable_states = get_reachable_states
     @states.delete_if{ |state| not reachable_states.include? state }
@@ -224,7 +248,7 @@ class FSM
   #  transition and the value is the state that
   #  results from said transition.
   #
-  #  {Test Example}[rdoc-ref:TestFSM#test_accepting_states] 
+  #  {Test Example}[rdoc-ref:TestFSM#test_build_tables]
   #
   def build_tables(classes)
     tbls = Hash.new
@@ -270,6 +294,9 @@ class FSM
     return equiv_classes
   end
 
+  ##
+  #  {Test Example}[rdoc-ref:TestFSM#test_get_equiv_classes]
+  #
   def get_equiv_classes(equiv_classes=nil)
     old_equiv_classes = equiv_classes
     if not old_equiv_classes
@@ -286,6 +313,8 @@ class FSM
 
   ##
   #  Keeps only the first state from each equiv class.
+  #
+  #  {Test Example}[rdoc-ref:TestFSM#test_minimize]
   #
   def minimize()
     eliminate_unreachable_states
@@ -308,10 +337,10 @@ class FSM
         dest_class = equiv_classes.find{ |equiv_class| equiv_class.include?(dest) }
         dest_keeper_state = dest_class.first
         # if the path connects two equivalent classes then remove it
-        if dest_class.equal?(src_class)
-          @paths[src].delete(trans)
+        #if dest_class.equal?(src_class)
+          #@paths[src].delete(trans)
         # else replace src and dest with keeper state from respective classes
-        else
+        #else
           if @paths.has_key?(src_keeper_state)
             @paths[src_keeper_state] = @paths[src_keeper_state].merge({ trans => dest_keeper_state })
           else
@@ -319,22 +348,29 @@ class FSM
           end
         end
       end
-    end
+    #end
     # remove redundant paths
     @paths.delete_if{ |state| not @states.include? state }
   end
 
-  def run_minimized_fsm_from_file(filename)
+  def build_from_file_and_minimize(filename)
+    build_from_file(filename)
+    minimize()
+    write_to_file(filename+".min")
   end
-    
 
   if __FILE__ == $0
     fsm_file = ARGV[0]
     input_file = ARGV[1]
     output_file = ARGV[2]
+    min = ARGV[3]
     fsm = FSM.new
+    fsm_min = FSM.new if min
     fsm.build_from_file(fsm_file)
+    fsm_min.build_from_file_and_minimize(fsm_file) if min
+    fsm_min.write_to_file fsm_file + ".min"
     fsm.run_from_file(input_file, output_file)
+    fsm_min.run_from_file(input_file, output_file+".min") if min
   end
 
   private 

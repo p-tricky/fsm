@@ -1,4 +1,5 @@
-Bruce_Banner
-The_Incredible_Hulk
-Bruce_Banner, anger The_Incredible_Hulk
-The_Incredible_Hulk tired Bruce_Banner
+# Example fsm file format
+   Bruce_Banner
+   The_Incredible_Hulk
+   Bruce_Banner, anger The_Incredible_Hulk
+   The_Incredible_Hulk tired Bruce_Banner
