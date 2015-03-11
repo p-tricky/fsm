@@ -324,13 +324,10 @@ class FSM
   def get_equiv_classes(equiv_classes=nil)
     old_equiv_classes = equiv_classes
     if not old_equiv_classes
-      #puts "partition into accepting and rejecting states"
       old_equiv_classes = @states.partition{ |state| @accepting_states.include? state }.reject(&:empty?)
     end
     tbls = build_tables old_equiv_classes
     new_equiv_classes = split_classes(tbls)
-    #puts "equal: #{new_equiv_classes.eql? old_equiv_classes}"
-    #puts "old classes: #{old_equiv_classes}            new classes: #{new_equiv_classes}"
     new_equiv_classes = get_equiv_classes(new_equiv_classes) unless new_equiv_classes.eql?(old_equiv_classes) 
     return new_equiv_classes
   end
@@ -361,19 +358,14 @@ class FSM
       paths_from_src.each do |trans, dest|
         dest_class = equiv_classes.find{ |equiv_class| equiv_class.include?(dest) }
         dest_keeper_state = dest_class.first
-        # if the path connects two equivalent classes then remove it
-        #if dest_class.equal?(src_class)
-          #@paths[src].delete(trans)
-        # else replace src and dest with keeper state from respective classes
-        #else
-          if @paths.has_key?(src_keeper_state)
-            @paths[src_keeper_state] = @paths[src_keeper_state].merge({ trans => dest_keeper_state })
-          else
-            @paths[src_keeper_state] = { trans => dest_keeper_state }
-          end
+        # replace src and dest with keeper state from respective classes
+        if @paths.has_key?(src_keeper_state)
+          @paths[src_keeper_state] = @paths[src_keeper_state].merge({ trans => dest_keeper_state })
+        else
+          @paths[src_keeper_state] = { trans => dest_keeper_state }
         end
       end
-    #end
+    end
     # remove redundant paths
     @paths.delete_if{ |state| not @states.include? state }
   end
@@ -401,7 +393,6 @@ class FSM
       puts "Please see docs for proper usage."
       exit 1
     end
-    puts "Thanks for reading the docs!"
     fsm = FSM.new
     fsm_min = FSM.new if min
     fsm.build_from_file(fsm_file)
