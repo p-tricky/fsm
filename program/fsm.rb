@@ -177,6 +177,7 @@ class FSM
       if @accepting_states.include?(@state)
         return "Accept"
       else
+        return "Reject: invalid transition" if @state.nil?
         return "Reject: invalid final state"
       end
     rescue NoMethodError
@@ -213,6 +214,10 @@ class FSM
     end
   end
 
+  ##
+  #  Uses breadth first search to find all states that are reachable 
+  #  from the start state
+  #
   def get_reachable_states()
     reachable_states = [@state]
     djikstra_queue = Queue.new
@@ -230,6 +235,8 @@ class FSM
   end
 
   ##
+  #  Gets reachable states and then eliminates all others
+  #
   #  {Test Example}[rdoc-ref:TestFSM#test_eliminate_unreachable_states]
   #
   def eliminate_unreachable_states()
@@ -260,7 +267,14 @@ class FSM
   end
 
   ##
-  #  Returns a hash.
+  #  Returns a 2 dimensional hash.
+  #
+  #  Each state in the fsm is a key in the hash.
+  #  The keys hash to another hash that contains
+  #  metadata.  The metadata includes the key's class
+  #  as well as all of the possible transitions from
+  #  the key and the classes that the transitions lead to
+  #
   def build_table(state, classes)
     tbl = Hash.new
     classes.each do |cur_class|
@@ -281,13 +295,20 @@ class FSM
   end
 
   ##
-  #  
+  #  Group the tables by metadata.  This returns a hash where the keys are the
+  #  unique metadata entries, and the values are an array containing all of the
+  #  tbls that share the same metadata.
+  #
+  #  Add all states with identical metadata to the same equiv_class.
+  #  Return an array containing each equiv_class
+  #
   def split_classes(tbls)
     equiv_classes = []
-    tbls.group_by{ |k, v| v }.values.each do |equiv_arrs|
+    tbls.group_by{ |state, metadata| metadata }.values.each do |tbls_with_equiv_metadata|
+      # group_by returns a hash where
       equiv_class = []
-      equiv_arrs.each do |state|
-        equiv_class << state.first
+      tbls_with_equiv_metadata.each do |state, metadata|
+        equiv_class << state
       end
       equiv_classes << equiv_class
     end
@@ -295,6 +316,9 @@ class FSM
   end
 
   ##
+  #  Returns a 2 dimensional array.  Each subarray contains all states
+  #  that are part of the same equivalence class
+  #
   #  {Test Example}[rdoc-ref:TestFSM#test_get_equiv_classes]
   #
   def get_equiv_classes(equiv_classes=nil)
@@ -312,7 +336,8 @@ class FSM
   end
 
   ##
-  #  Keeps only the first state from each equiv class.
+  #  Modifies the fsm so that it contains only the first state from each equiv class.
+  #  It also removes any classes that are unreachable
   #
   #  {Test Example}[rdoc-ref:TestFSM#test_minimize]
   #
@@ -353,6 +378,13 @@ class FSM
     @paths.delete_if{ |state| not @states.include? state }
   end
 
+  ##
+  #  Builds an fsm from the input file
+  #  Minimizes the fsm.
+  #  Writes the minimized fsm to a file of the same
+  #  name as the input file but with the addition .min
+  #  extention
+  #
   def build_from_file_and_minimize(filename)
     build_from_file(filename)
     minimize()
@@ -364,14 +396,20 @@ class FSM
     input_file = ARGV[1]
     output_file = ARGV[2]
     min = ARGV[3]
+    if (min and not min.eql? "--min") or (ARGV[0..2].include? "--min")
+      puts "Sorry, error when processing command line input."
+      puts "Please see docs for proper usage."
+      exit 1
+    end
+    puts "Thanks for reading the docs!"
     fsm = FSM.new
     fsm_min = FSM.new if min
     fsm.build_from_file(fsm_file)
     fsm_min.build_from_file_and_minimize(fsm_file) if min
-    fsm_min.write_to_file fsm_file + ".min"
+    fsm_min.write_to_file fsm_file + ".min" if min
     fsm.run_from_file(input_file, output_file)
     fsm_min.run_from_file(input_file, output_file+".min") if min
   end
 
-  private 
+  private :accept, :add_path, :change_state
 end
