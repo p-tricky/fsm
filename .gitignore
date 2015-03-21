@@ -1,0 +1,10 @@
+# exclude everything besides program dir
+/*
+!/program
+!.gitignore
+# exclude generated files 
+*.vim
+*.min
+*results
+doc/
+*.log
