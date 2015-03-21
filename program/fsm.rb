@@ -4,6 +4,7 @@
 #  text file.
 #
 #  ==Example usage:
+#  ===Standard (No minimization)
 #   $ ruby fsm.rb fsm fsm_input fsm_output
 #  
 #  The previous command will build the fsm specified 
@@ -13,6 +14,22 @@
 #  program will write the results to the specified file.
 #  Otherwise, the program will write the results to STD_IN.
 #
+#  ===Minimization
+#  There is an option to minimize the FSM.  The minimization option
+#  is specified by appending the --min flag to the end of the argument list.
+#   $ ruby fsm.rb fsm fsm_input fsm_output --min
+#  Please note that the min option must be at the end of the argument list 
+#  and that the fsm_output must be specified (fsm_output can not be left
+#  blank as in the standard usage).  
+#
+#  When the minimize option is selected two additional files will be created:
+#  one that contains the minimized fsm formatted in the same style as the
+#  standard fsm files and one additional output file that contains the results from the
+#  the  minimized fsm.  The minimized fsm file will have the same name as the fsm
+#  file provided, but with a .min extension appended to it.  Likewise, the additional
+#  output file will have the same name as the output file provided, but with a
+#  .min extension appended to it.
+#
 #  ==fsm file
 #  The fsm text file should be formatted as follows:
 #     starting state
@@ -21,7 +38,7 @@
 #  
 #  If you try to give the program a state or transition that contains
 #  special characters or spaces, the program will become confused.
-#  See {fsm_1}[rdoc-ref:fsm_1] and test/fsm_2 for examples of acceptable file 
+#  See {fsm_1}[rdoc-ref:fsm_1] and {fsm_2}[rdoc-ref:fsm_2] for examples of acceptable file 
 #  specifications.
 #
 #  ==fsm_input file
@@ -31,7 +48,8 @@
 #      here the first 2 transitions are 1 and the third is 0
 #   2) space and/or comma separated words 
 #      trans_1, trans_2 trans_3
-#  See test/fsm_1_input and test/fsm_2_input for examples.
+#  See {fsm_1_input}[rdoc-ref:fsm_1_input] and { fsm_2_input
+#  }[rdoc-ref:fsm_2_input] for examples.
 #
 class FSM
 
@@ -49,9 +67,6 @@ class FSM
     @paths = {}
   end
 
-  ##
-  #  {Test Example}[rdoc-ref:TestFSM#test_clear]
-  #
   def clear
     @state = nil
     @states = []

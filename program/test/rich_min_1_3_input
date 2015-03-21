@@ -1,12 +1,12 @@
 //accept
-aa
-bbaa
-bbaabb
-aaab
-aabaaa
+  aa
+  bbaa
+  bbaabb
 
+  aaab
+  aabaaa
 //reject
-aba
-b
-a
-aaabbab
+  aba
+  b
+  a
+  aaabbab
