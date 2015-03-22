@@ -1,0 +1,8 @@
+#palindrome builds a pda that accepts {a,b}* palindromes split by c
+ s
+ f
+ s, a, , a, s
+ s, b, , b, s
+ s, c, , , f
+ f, a, a, , f
+ f, b, b, , f

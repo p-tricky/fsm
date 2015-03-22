@@ -1,0 +1,6 @@
+#equals builds a pda that accepts n a's followed by n b's
+ s
+ f
+ s, a, , a, s
+ s, b, a, , f
+ f, b, a, , f

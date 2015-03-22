@@ -1,0 +1,7 @@
+#sample input for palindrome pda
+ aabbcbbaa
+ aabbcbbaaa
+ aabbcbba
+ aabbc
+ aab
+ c
