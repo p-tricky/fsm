@@ -19,7 +19,7 @@
 #  The pda text file should be formatted as follows:
 #     starting state
 #     accepting states (comma or space separated)
-#     transitions (start, path, dest)
+#     transitions (start, consume, pop, push, dest)
 #  
 #  If you try to give the program a state or transition that contains
 #  special characters or spaces, the program will become confused.
