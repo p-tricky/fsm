@@ -51,9 +51,11 @@
 #  See {fsm_1_input}[rdoc-ref:fsm_1_input] and { fsm_2_input
 #  }[rdoc-ref:fsm_2_input] for examples.
 #
+
 class FSM
 
   attr_accessor :state, :accepting_states, :paths, :eta, :curr_states, :next_states
+  @@dbg = false
 
   ## 
   #  Initializes empty fsm  
@@ -63,8 +65,8 @@ class FSM
     @curr_states = []
     @next_states = []
     @accepting_states = []
-    @paths = Hash.new{ |h1, k1| h1[k1] = 
-                       Hash.new{ |h2, k2| h2[k2] = [] }}
+    @paths = Hash.new{ |h1, k1| h1[k1] = {} }
+                       
   end
 
   def clear
@@ -73,8 +75,7 @@ class FSM
     @curr_states = []
     @next_states = []
     @accepting_states = []
-    @paths = Hash.new{ |h1, k1| h1[k1] = 
-                       Hash.new{ |h2, k2| h2[k2] = [] }}
+    @paths = Hash.new{ |h1, k1| h1[k1] = {} }
   end
 
   def accept(*args)
@@ -85,7 +86,11 @@ class FSM
   #  {Test Example}[rdoc-ref:TestFSM#test_add_path]
   #
   def add_path(start, path, dest)
-      @paths[start][path] << dest
+    if @paths[start][path]
+      @paths[start][path] << dest 
+    else
+      @paths[start][path] = [dest]
+    end
   end
 
   ##
@@ -129,14 +134,17 @@ class FSM
     reachable_states = []
     djikstra_queue = Queue.new
     djikstra_queue.enq state
+    if @paths[state][trans] and @paths[state][trans].include? state
+      reachable_states << state
+    end
     while not djikstra_queue.empty?
       visited_state = djikstra_queue.pop
       if @paths[visited_state][trans]
         @paths[visited_state][trans].each do |dest|
           djikstra_queue.enq dest unless reachable_states.include? dest
         end
-        reachable_states << visited_state unless visited_state.eql? state
       end
+      reachable_states << visited_state unless visited_state.eql? state
     end
     return reachable_states
   end
@@ -167,15 +175,16 @@ class FSM
     has_words = input.include?(",")
     @curr_states = []
     @next_states = []
-    @curr_states = get_reachable_states(@state, @eta)
+    @curr_states = [@state] | get_reachable_states(@state, @eta)
     FSM.get_transition(input, has_words) do |transition|
-      return "Reject" if @curr_states.empty?
       @curr_states.each do |state|
-        @next_states.concat(get_reachable_states(state, transition))
+        @next_states.concat(@paths[state][transition]) if @paths[state][transition]
         @next_states.concat(get_reachable_states(state, @eta))
       end
       @curr_states = @next_states
+      puts "transition: #{transition}, states: #{@curr_states}" if @@dbg
       @next_states = []
+      return "Reject" if @curr_states.empty?
     end
     @curr_states.each do |state|
       return "Accept" if @accepting_states.include?(state)
